@@ -1,0 +1,21 @@
+forum:
+  datasource:
+    type: H2
+    script-encoding: utf-8
+    separator: ;
+    scripts: classpath:schema.sql
+
+spring:
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 4
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    com.github.forum: debug
+    org.springframework: debug

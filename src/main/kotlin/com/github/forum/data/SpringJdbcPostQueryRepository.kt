@@ -6,6 +6,7 @@ import com.github.forum.domain.Topic
 import org.springframework.data.jdbc.core.mapping.AggregateReference
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations
+import org.springframework.jdbc.core.query
 import java.util.UUID
 
 class SpringJdbcPostQueryRepository(val namedParameterJdbcOperations: NamedParameterJdbcOperations) : PostQueryRepository {
@@ -13,9 +14,8 @@ class SpringJdbcPostQueryRepository(val namedParameterJdbcOperations: NamedParam
     val jdbcOperations: JdbcOperations
         get() = namedParameterJdbcOperations.jdbcOperations
 
-    @Suppress("DEPRECATION")
     override fun findByTopic(topic: Topic): Array<Post> {
-        return jdbcOperations.query(SQL_findByTopic, arrayOf(topic.id), {
+        return jdbcOperations.query(SQL_findByTopic, topic.id) {
             rs, rowNum ->
             Post(
                 rs.getLong("ID"),
@@ -25,7 +25,7 @@ class SpringJdbcPostQueryRepository(val namedParameterJdbcOperations: NamedParam
                 rs.getDate("CREATED_AT"),
                 rs.getDate("UPDATED_AT")
             )
-        }).toTypedArray()
+        }.toTypedArray()
     }
 
     companion object {

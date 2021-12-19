@@ -23,6 +23,21 @@ class PersonRepository {
     fun findByLastname(lastname: String) = listOf<Person>()
 }
 
+data class Traveler(
+    val name: String,
+    val city: String = "Seoul",
+    val cash: Int = 0
+) {
+    fun moveTo(city: String) = copy(city = city)
+    fun earn(cash: Int) = copy(cash = this.cash.plus(cash))
+    fun pay(cash: Int) = copy(cash = this.cash.minus(cash))
+}
+
+class TravelerRepository {
+
+    fun findByName(name: String): Traveler? = null
+}
+
 enum class CreditScore {
     BAD, FAIR, GOOD, EXCELLENT
 }
@@ -53,4 +68,29 @@ fun main() {
         CreditScore.GOOD -> 690..719
         CreditScore.EXCELLENT -> 720..850
     }
+
+    val travelerRepository = TravelerRepository()
+
+    val arawn = Traveler("arawn", "Seoul", 1000)
+    arawn.moveTo("New York")
+    arawn.pay(10)
+
+    val grizz = Traveler("Grizz", "Seoul", 1000).let {
+        it.moveTo("London")
+        it.pay(10)
+    }
+
+    val dan = Traveler("Dan").apply {
+        moveTo("Vancouver")
+        earn(50)
+    }
+    with(dan) {
+        moveTo("Busan")
+        moveTo("Seoul")
+    }
+
+    travelerRepository.findByName("Root")?.run {
+        moveTo("Firenze")
+    }
+
 }

@@ -6,7 +6,6 @@ import com.github.forum.application.NewsItem
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Mono
 import java.time.Duration
 
 @RestController
@@ -14,14 +13,10 @@ import java.time.Duration
 class NotificationController(val forumNewsPublisher: ForumNewsPublisher) {
 
     @GetMapping("/subscribe/news")
-    fun subscribeNews(): Mono<NewsDto> {
-        return forumNewsPublisher.subscribeAsync(
-            Duration.ofSeconds(5)
-        ).flatMap({ news ->
-            Mono.just(
-                NewsDto.of(news)
-            )
-        })
+    suspend fun subscribeNews(): NewsDto {
+        return NewsDto.of(
+            forumNewsPublisher.subscribe(Duration.ofSeconds(5))
+        )
     }
 }
 
@@ -34,14 +29,9 @@ data class NewsDto(val items: Array<NewsItemDto>) {
             news.items.map({ item -> mapItem(item) }).toTypedArray()
         )
 
-        private fun mapItem(item: NewsItem<*>): NewsItemDto {
-            if (item is NewsItem.NewTopic) {
-                return NewsItemDto(item.content.title, item.content.author.username)
-            } else if (item is NewsItem.NewPost) {
-                return NewsItemDto(item.content.text, item.content.author)
-            } else {
-                throw IllegalArgumentException("This item cannot be converted")
-            }
+        private fun mapItem(item: NewsItem<*>) = when (item) {
+            is NewsItem.NewTopic -> NewsItemDto(item.content.title, item.content.author.username)
+            is NewsItem.NewPost -> NewsItemDto(item.content.text, item.content.author)
         }
     }
 }

@@ -4,7 +4,6 @@ import com.github.forum.domain.Post
 import com.github.forum.domain.Topic
 import com.github.forum.domain.User
 import org.springframework.data.jdbc.core.mapping.AggregateReference
-import reactor.core.publisher.Mono
 import java.time.Duration
 import java.util.Date
 import java.util.UUID
@@ -13,16 +12,16 @@ interface ForumNewsPublisher {
 
     fun subscribe(): News
 
-    fun subscribeAsync(period: Duration): Mono<News>
+    suspend fun subscribe(period: Duration): News
 }
 
-interface NewsItem<out C> {
+sealed class NewsItem<out C> {
     val type: String
         get() = javaClass.simpleName
-    val content: C
+    abstract val content: C
 
-    data class NewTopic(override val content: TopicDetails) : NewsItem<TopicDetails>
-    data class NewPost(override val content: Post) : NewsItem<Post>
+    data class NewTopic(override val content: TopicDetails) : NewsItem<TopicDetails>()
+    data class NewPost(override val content: Post) : NewsItem<Post>()
 }
 data class News(val items: Array<NewsItem<*>>)
 
@@ -43,11 +42,11 @@ class TopicDetails private constructor(
 
     companion object {
 
-        fun of(topic: Topic, authorMapper: AuthorMapper): TopicDetails {
+        fun of(topic: Topic, authorMapper: (ref: AggregateReference<User, Long>) -> User): TopicDetails {
             return TopicDetails(
                 id = topic.id,
                 title = topic.title,
-                author = authorMapper.map(topic.author),
+                author = authorMapper(topic.author),
                 createdAt = topic.createdAt,
                 updatedAt = topic.updatedAt
             )
@@ -55,7 +54,7 @@ class TopicDetails private constructor(
     }
 }
 
-interface AuthorMapper {
+fun interface AuthorMapper {
     fun map(ref: AggregateReference<User, Long>): User
 }
 

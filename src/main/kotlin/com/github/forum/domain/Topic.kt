@@ -5,8 +5,8 @@ import org.springframework.data.annotation.Transient
 import org.springframework.data.domain.Persistable
 import org.springframework.data.jdbc.core.mapping.AggregateReference
 import org.springframework.data.relational.core.mapping.Column
-import java.util.*
-
+import java.util.Date
+import java.util.UUID
 
 class Topic(
     @Id @Column("ID")
@@ -14,13 +14,14 @@ class Topic(
     val title: String,
     val author: AggregateReference<User, Long>,
     val createdAt: Date,
-    val updatedAt: Date): Persistable<UUID> {
+    val updatedAt: Date
+) : Persistable<UUID> {
 
     @Transient
-    private var _isNew: Boolean= false
+    private var _isNew: Boolean = false
 
     override fun getId(): UUID {
-        return _id;
+        return _id
     }
 
     override fun isNew(): Boolean {
@@ -32,10 +33,14 @@ class Topic(
     }
 
     fun writePost(text: String, author: User): Post {
-        return Post(text, AggregateReference.to(author.requiredId()), AggregateReference.to(_id))
+        return Post(
+            text = text,
+            author = AggregateReference.to(author.requiredId()),
+            topic = AggregateReference.to(_id)
+        )
     }
 
-    override fun toString() : String {
+    override fun toString(): String {
         return "Topic(id='$_id', title='$title', author=${author.id})"
     }
 
@@ -44,12 +49,14 @@ class Topic(
         fun create(title: String, author: User): Topic {
             val createdAt = Date()
             val topic = Topic(
-                UUID.randomUUID(), title, AggregateReference.to(author.requiredId()), createdAt, createdAt
+                UUID.randomUUID(),
+                title,
+                AggregateReference.to(author.requiredId()),
+                createdAt,
+                createdAt
             )
             topic._isNew = true
             return topic
         }
-
     }
-
 }

@@ -25,7 +25,7 @@ class ForumController(val forumReader: ForumReader) {
         val posts = forumReader.loadPosts(topicId)
 
         model.addAttribute("topic", TopicDto.from(posts.topic))
-        model.addAttribute("posts", PostDto.from(posts.content.map { it!! }.toTypedArray()))
+        model.addAttribute("posts", PostDto.from(posts.content))
     }
 }
 
@@ -64,16 +64,10 @@ data class PostDto(
 
     companion object {
 
-        fun from(posts: Array<Post?>): Array<PostDto> {
+        fun from(posts: Array<Post>): Array<PostDto> {
             return posts.map({ post ->
-                if (post == null) {
-                    throw NullPointerException("Post object is null")
-                }
-                if (post.id == null) {
-                    throw NullPointerException("Id field is null in post object")
-                }
                 PostDto(
-                    post.id,
+                    post.id!!,
                     post.text,
                     post.author.id,
                     post.createdAt,

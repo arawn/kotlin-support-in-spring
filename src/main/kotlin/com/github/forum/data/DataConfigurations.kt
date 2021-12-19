@@ -3,6 +3,9 @@ package com.github.forum.data
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.core.env.Environment
+import org.springframework.core.env.get
+import org.springframework.core.env.getProperty
+import org.springframework.core.env.getRequiredProperty
 import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations
@@ -17,17 +20,17 @@ class DataConfigurations : AbstractJdbcConfiguration() {
 
     @Bean
     fun dataSource(environment: Environment): DataSource {
-        val type = environment.getRequiredProperty("forum.datasource.type", EmbeddedDatabaseType::class.java)
-        val scriptEncoding = environment.getProperty("forum.datasource.scriptEncoding", "utf-8")
-        val separator = environment.getProperty("forum.datasource.separator", ";")
-        val scripts = environment.getProperty("forum.datasource.scripts", List::class.java)?.map { it.toString() }?.toTypedArray()
+        val type = environment.getRequiredProperty<EmbeddedDatabaseType>("forum.datasource.type")
+        val scriptEncoding = environment.get("forum.datasource.scriptEncoding") ?: "utf-8"
+        val separator = environment.get("forum.datasource.separator") ?: ";"
+        val scripts = environment.getProperty<Array<String>>("forum.datasource.scripts")
 
-        val builder = EmbeddedDatabaseBuilder()
-        builder.setType(type)
-        builder.setScriptEncoding(scriptEncoding)
-        builder.setSeparator(separator)
-        builder.addScripts(*scripts ?: emptyArray())
-        return builder.build()
+        return EmbeddedDatabaseBuilder().apply {
+            setType(type)
+            setScriptEncoding(scriptEncoding)
+            setSeparator(separator)
+            addScripts(*scripts ?: emptyArray())
+        }.build()
     }
 
     @Bean

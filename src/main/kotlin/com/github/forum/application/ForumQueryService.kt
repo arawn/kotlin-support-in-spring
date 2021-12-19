@@ -5,12 +5,11 @@ import com.github.forum.domain.Topic
 import com.github.forum.domain.TopicQueryRepository
 import com.github.forum.domain.User
 import com.github.forum.domain.UserQueryRepository
-import org.springframework.data.jdbc.core.mapping.AggregateReference
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import java.time.Duration
 import java.util.UUID
 
@@ -26,11 +25,7 @@ class ForumQueryService(
     override fun subscribe(): News {
         val sample = TopicDetails.of(
             Topic.create("sample", User.ANONYMOUS),
-            object : AuthorMapper {
-                override fun map(ref: AggregateReference<User, Long>): User {
-                    return User.ANONYMOUS
-                }
-            }
+            { User.ANONYMOUS }
         )
         return News(
             arrayOf(
@@ -39,26 +34,27 @@ class ForumQueryService(
         )
     }
 
-    override fun subscribeAsync(period: Duration): Mono<News> {
-        return Mono.fromSupplier {
+    override suspend fun subscribe(period: Duration): News {
+        return coroutineScope {
+            delay(period.toMillis())
             subscribe()
-        }.delaySubscription(
-            period
-        ).publishOn(
-            Schedulers.fromExecutor(executor)
-        )
+        }
     }
+
+    //
+    // Mono.fromSupplier {
+    //     subscribe()
+    // }.delaySubscription(
+    // period
+    // ).publishOn(
+    // Schedulers.fromExecutor(executor)
+    // )
 
     override fun loadTopics(): Array<TopicDetails> {
         return topicQueryRepository.findAll().map {
-            TopicDetails.of(
-                it,
-                object : AuthorMapper {
-                    override fun map(ref: AggregateReference<User, Long>): User {
-                        return userQueryRepository.findById(ref.id!!)
-                    }
-                }
-            )
+            TopicDetails.of(it, { ref ->
+                userQueryRepository.findById(ref.id!!)
+            })
         }.toTypedArray()
     }
 
@@ -68,10 +64,8 @@ class ForumQueryService(
         return Posts(
             TopicDetails.of(
                 topic,
-                object : AuthorMapper {
-                    override fun map(ref: AggregateReference<User, Long>): User {
-                        return userQueryRepository.findById(ref.id!!)
-                    }
+                { ref ->
+                    userQueryRepository.findById(ref.id!!)
                 }
             ),
             posts
